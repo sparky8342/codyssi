@@ -17,23 +17,35 @@ for my $line (@lines) {
 my $size = keys %graph;
 print "$size\n";
 
-# part 2
+# part 2 and 3
 my @queue   = ("STT");
-my %visited = ( "STT" => 1 );
+my %visited = ( "STT" => 0 );
 
-for ( 1 .. 3 ) {
-    my @next_queue;
-    for my $location (@queue) {
+my $steps = 1;
+while ( scalar(@queue) > 0 ) {
+    my $l = scalar @queue;
+    for ( 1 .. $l ) {
+        my $location = shift @queue;
         for my $destination ( @{ $graph{$location} } ) {
             if ( exists( $visited{$destination} ) ) {
                 next;
             }
-            push @next_queue, $destination;
-            $visited{$destination} = 1;
+            push @queue, $destination;
+            $visited{$destination} = $steps;
         }
     }
-    @queue = @next_queue;
+    $steps++;
 }
 
-$size = keys %visited;
+$size = 0;
+foreach my $value ( values %visited ) {
+    if ( $value <= 3 ) {
+        $size++;
+    }
+}
+print "$size\n";
+
+# part 3
+$size = 0;
+map { $size += $_ } values %visited;
 print "$size\n";
