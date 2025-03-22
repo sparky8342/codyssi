@@ -26,3 +26,14 @@ my $quality = 0;
 map { $quality += $_ % 2 == 0 ? $_ : 0 } @nums;
 $price = $quality**$function_c * $function_b + $function_a;
 print "$price\n";
+
+# part 3
+my $max_price    = 15000000000000;
+my $best_quality = 0;
+foreach my $num (@nums) {
+    my $price = $num**$function_c * $function_b + $function_a;
+    if ( $price < $max_price && $num > $best_quality ) {
+        $best_quality = $num;
+    }
+}
+print "$best_quality\n";
