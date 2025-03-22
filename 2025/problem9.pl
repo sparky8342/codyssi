@@ -8,6 +8,39 @@ sub manhattan {
       abs( $coord1->[0] - $coord2->[0] ) + abs( $coord1->[1] - $coord2->[1] );
 }
 
+sub find_islands {
+    my ( $coord, $coords ) = @_;
+
+    my $closest_dist = 999999;
+    my $closest;
+    my $furthest_dist = 0;
+    for ( my $i = 0 ; $i < scalar @$coords ; $i++ ) {
+        my $dist = manhattan( $coord, $coords->[$i] );
+        if ( $dist == 0 ) {
+            next;
+        }
+        elsif ( $dist < $closest_dist ) {
+            $closest_dist = $dist;
+            $closest      = $i;
+        }
+        elsif ( $dist == $closest_dist ) {
+            if ( $coords->[$i]->[0] < $closest->[0] ) {
+                $closest = $coords->[$i];
+            }
+            elsif ($coords->[$i]->[0] == $closest->[0]
+                && $coords->[$i]->[1] < $closest->[1] )
+            {
+                $closest = $coords->[$i];
+            }
+        }
+        elsif ( $dist > $furthest_dist ) {
+            $furthest_dist = $dist;
+        }
+    }
+
+    return ( $closest_dist, $closest, $furthest_dist );
+}
+
 open my $fh, "<", "inputs/view_problem_9_input" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
@@ -18,37 +51,23 @@ for my $line (@lines) {
 }
 
 # part 1 and 2
-my $closest = 999999;
-my $closest_coord;
-my $furthest = 0;
-foreach my $coord (@coords) {
-    my $dist = abs( $coord->[0] ) + abs( $coord->[1] );
-    if ( $dist < $closest ) {
-        $closest       = $dist;
-        $closest_coord = $coord;
-    }
-    elsif ( $dist == $closest ) {
-        if ( $coord->[0] < $closest_coord->[0] ) {
-            $closest_coord = $coord;
-        }
-        elsif ($coord->[0] == $closest_coord->[0]
-            && $coord->[1] < $closest_coord->[1] )
-        {
-            $closest_coord = $coord;
-        }
-    }
-    elsif ( $dist > $furthest ) {
-        $furthest = $dist;
-    }
-}
-print $furthest - $closest . "\n";
+my $coord = [ 0, 0 ];
+my ( $closest_distance, $closest, $furthest_distance ) =
+  find_islands( $coord, \@coords );
+print $furthest_distance - $closest_distance . "\n";
 
 # part 2
-$closest = 999999;
-foreach my $coord (@coords) {
-    my $dist = manhattan( $coord, $closest_coord );
-    if ( $dist > 0 && $dist < $closest ) {
-        $closest = $dist;
-    }
+$coord = $coords[$closest];
+($closest_distance) = find_islands( $coord, \@coords );
+print "$closest_distance\n";
+
+# part 3
+$coord = [ 0, 0 ];
+my $total = 0;
+while ( scalar @coords ) {
+    my ( $closest_distance, $closest ) = find_islands( $coord, \@coords );
+    $total += $closest_distance;
+    $coord = $coords[$closest];
+    splice( @coords, $closest, 1 );
 }
-print "$closest\n";
+print "$total\n";
