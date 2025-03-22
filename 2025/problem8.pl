@@ -76,7 +76,6 @@ print "$units\n";
 # part 3
 $units = 0;
 for my $line (@lines) {
-    my $encoded = rle($line);
-    $units += line_units($encoded);
+    $units += line_units( rle($line) );
 }
 print "$units\n";
