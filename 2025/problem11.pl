@@ -45,5 +45,22 @@ for ( my $i = 0 ; $i < scalar @swaps - 1 ; $i++ ) {
         $freq[ $swaps[$i]->[1] ]
       );
 }
+pop @swaps;
+print $freq[$test_index] . "\n";
 
+# part 3
+foreach my $swap (@swaps) {
+    my ( $s1, $s2 ) = @$swap;
+    if ( $s1 > $s2 ) {
+        ( $s1, $s2 ) = ( $s2, $s1 );
+    }
+    my $diff      = $s2 - $s1;
+    my $end_space = scalar @freq - $s2 - 1;
+    if ( $diff > $end_space ) {
+        $diff = $end_space;
+    }
+    for ( my $i = $s1 ; $i < $s1 + $diff ; $i++ ) {
+        ( $freq[$i], $freq[ $i + $diff ] ) = ( $freq[ $i + $diff ], $freq[$i] );
+    }
+}
 print $freq[$test_index] . "\n";
