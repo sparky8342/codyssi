@@ -23,8 +23,27 @@ $i++;
 my $test_index = $lines[$i] - 1;
 
 # part 1
+my @freq = @frequencies;
 foreach my $swap (@swaps) {
-    ( $frequencies[ $swap->[0] ], $frequencies[ $swap->[1] ] ) =
-      ( $frequencies[ $swap->[1] ], $frequencies[ $swap->[0] ] );
+    ( $freq[ $swap->[0] ], $freq[ $swap->[1] ] ) =
+      ( $freq[ $swap->[1] ], $freq[ $swap->[0] ] );
 }
-print $frequencies[$test_index] . "\n";
+print $freq[$test_index] . "\n";
+
+# part 2
+@freq = @frequencies;
+push @swaps, $swaps[0];
+for ( my $i = 0 ; $i < scalar @swaps - 1 ; $i++ ) {
+    (
+        $freq[ $swaps[$i]->[0] ],
+        $freq[ $swaps[$i]->[1] ],
+        $freq[ $swaps[ $i + 1 ]->[0] ]
+      )
+      = (
+        $freq[ $swaps[ $i + 1 ]->[0] ],
+        $freq[ $swaps[$i]->[0] ],
+        $freq[ $swaps[$i]->[1] ]
+      );
+}
+
+print $freq[$test_index] . "\n";
