@@ -38,13 +38,14 @@ sub resolve_debts {
     my ($self) = @_;
     my @to_pay;
     while ( scalar @{ $self->{debts} } && $self->balance() > 0 ) {
-        if ( $self->{debts}->[0]->amount() < $self->balance() ) {
-            $self->subtract( $self->{debts}->[0]->amount() );
+        my $first_debt = $self->{debts}->[0];
+        if ( $first_debt->amount() < $self->balance() ) {
+            $self->subtract( $first_debt->amount() );
             push @to_pay, shift @{ $self->{debts} };
         }
         else {
-            push @to_pay, Debt->new($self->{debts}->[0]->name(), $self->balance());
-            $self->{debts}->[0]->subtract($self->balance());
+            push @to_pay, Debt->new( $first_debt->name(), $self->balance() );
+            $first_debt->subtract( $self->balance() );
             $self->subtract( $self->balance() );
         }
     }
@@ -58,7 +59,7 @@ use warnings;
 sub new {
     my ( $class, $name, $amount ) = @_;
     my $self = {
-        name => $name,
+        name   => $name,
         amount => $amount,
     };
     bless $self, $class;
@@ -66,18 +67,18 @@ sub new {
 }
 
 sub name {
-	my ($self) = @_;
-	return $self->{name};
+    my ($self) = @_;
+    return $self->{name};
 }
 
 sub amount {
-	my ($self) = @_;
-	return $self->{amount};
+    my ($self) = @_;
+    return $self->{amount};
 }
 
 sub subtract {
-	my ($self, $amount) = @_;
-	$self->{amount} -= $amount;
+    my ( $self, $amount ) = @_;
+    $self->{amount} -= $amount;
 }
 
 package main;
@@ -100,17 +101,17 @@ sub run_transactions {
         }
 
         if ( $mode == 2 && $from->balance() < $amount ) {
-	    my $debt = Debt->new($to_name, $amount - $from->balance());
+            my $debt = Debt->new( $to_name, $amount - $from->balance() );
             $from->add_debt($debt);
             $amount = $from->balance();
         }
 
         $from->subtract($amount);
         my @pay = $to->add($amount);
-	while (scalar @pay) {
-		my $debt = shift @pay;
-		push @pay, $people->{$debt->name()}->add($debt->amount());
-	}
+        while ( scalar @pay ) {
+            my $debt = shift @pay;
+            push @pay, $people->{ $debt->name() }->add( $debt->amount() );
+        }
     }
 
     my @balances;
