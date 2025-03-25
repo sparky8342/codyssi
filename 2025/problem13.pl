@@ -3,15 +3,18 @@ use strict;
 use warnings;
 
 sub run_transactions {
-    my ( $people, $transactions, $no_negative ) = @_;
+    my ( $people, $transactions, $mode ) = @_;
+    $people = {%$people};
     for my $transaction (@$transactions) {
         my ( $from, $to, $amount ) = @$transaction;
-        if ( $no_negative && $people->{$from} < $amount ) {
+        if ( $mode == 1 && $people->{$from} < $amount ) {
             $amount = $people->{$from};
         }
         $people->{$from} -= $amount;
         $people->{$to}   += $amount;
     }
+    my @balances = sort { $b <=> $a } values %$people;
+    return $balances[0] + $balances[1] + $balances[2];
 }
 
 open my $fh, "<", "inputs/view_problem_13_input" or die "$!";
@@ -37,13 +40,9 @@ for ( ; $i < scalar @lines ; $i++ ) {
 }
 
 # part 1
-my $people_copy = {%people};
-run_transactions( $people_copy, \@transactions );
-my @balances = sort { $b <=> $a } values %$people_copy;
-print $balances[0] + $balances[1] + $balances[2] . "\n";
+my $top_three = run_transactions( \%people, \@transactions, 0 );
+print "$top_three\n";
 
 # part 2
-$people_copy = {%people};
-run_transactions( $people_copy, \@transactions, 1 );
-@balances = sort { $b <=> $a } values %$people_copy;
-print $balances[0] + $balances[1] + $balances[2] . "\n";
+$top_three = run_transactions( \%people, \@transactions, 1 );
+print "$top_three\n";
