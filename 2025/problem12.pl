@@ -3,8 +3,6 @@ use strict;
 use warnings;
 
 open my $fh, "<", "inputs/view_problem_12_input" or die "$!";
-
-#open my $fh, "<", "p12.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
