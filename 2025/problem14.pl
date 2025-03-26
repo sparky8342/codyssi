@@ -15,10 +15,10 @@ for my $line (@lines) {
     }
     push @grid, $row;
 }
+my $size = scalar @{ $grid[0] };
 
 # part 1
-my $min  = 999999;
-my $size = scalar @{ $grid[0] };
+my $min = 999999;
 for ( my $i = 0 ; $i < $size ; $i++ ) {
     my $r = 0;
     my $c = 0;
@@ -26,12 +26,8 @@ for ( my $i = 0 ; $i < $size ; $i++ ) {
         $r += $grid[$i][$j];
         $c += $grid[$j][$i];
     }
-    if ( $r < $min ) {
-        $min = $r;
-    }
-    if ( $c < $min ) {
-        $min = $c;
-    }
+    $min = min( $min, $r );
+    $min = min( $min, $c );
 }
 print "$min\n";
 
