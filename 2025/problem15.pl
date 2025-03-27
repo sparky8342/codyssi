@@ -27,6 +27,7 @@ sub base_to {
 }
 
 open my $fh, "<", "inputs/view_problem_15_input" or die "$!";
+
 #open my $fh, "<", "p15.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
@@ -51,3 +52,13 @@ foreach my $num (@nums) {
     $sum += base_from( $n, $base );
 }
 print base_to( $sum, 68 ) . "\n";
+
+# part 3
+my $base = 2;
+while (1) {
+    if ( $base**4 - 1 > $sum ) {
+        print "$base\n";
+        last;
+    }
+    $base++;
+}
