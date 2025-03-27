@@ -27,8 +27,6 @@ sub base_to {
 }
 
 open my $fh, "<", "inputs/view_problem_15_input" or die "$!";
-
-#open my $fh, "<", "p15.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
