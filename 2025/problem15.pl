@@ -52,11 +52,4 @@ foreach my $num (@nums) {
 print base_to( $sum, 68 ) . "\n";
 
 # part 3
-my $base = 2;
-while (1) {
-    if ( $base**4 - 1 > $sum ) {
-        print "$base\n";
-        last;
-    }
-    $base++;
-}
+print int( $sum**( 1 / 4 ) + 1 ) . "\n";
