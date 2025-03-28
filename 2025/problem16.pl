@@ -4,8 +4,6 @@ use warnings;
 use List::Util qw(max);
 use Storable   qw(dclone);
 
-use Data::Dumper;
-
 use constant MOD => 1073741824;
 my $size;
 
@@ -120,8 +118,6 @@ sub max_row_col {
 }
 
 open my $fh, "<", "inputs/view_problem_16_input" or die "$!";
-
-#open my $fh, "<", "test.txt" or die "$!";
 my $data = do { local $/; <$fh> };
 close $fh;
 
@@ -135,17 +131,6 @@ foreach my $line ( split /\n/, $parts[0] ) {
 $size = scalar @grid;
 my @instructions = split /\n/, $parts[1];
 
-#ADD 60 ROW 25
-#SUB 79 COL 1
-#SHIFT ROW 30 BY 19
-#MULTIPLY 4 COL 19
-#SHIFT COL 29 BY 28
-#ADD 6 ROW 6
-#SHIFT COL 26 BY 5
-#SUB 98 ROW 17
-#MULTIPLY 2 ROW 1
-#SHIFT ROW 27 BY 19
-
 # part 1
 my $g = dclone( \@grid );
 foreach my $line (@instructions) {
@@ -153,18 +138,29 @@ foreach my $line (@instructions) {
 }
 print max_row_col($g) . "\n";
 
-# part 2
+# part 2 and 3
 $g = dclone( \@grid );
-my $ins;
-foreach my $flow ( split /\n/, $parts[2] ) {
-    if ( $flow eq 'TAKE' ) {
-        $ins = shift @instructions;
+my @flow_ins = split /\n/, $parts[2];
+my $part2    = 0;
+while ( scalar @instructions ) {
+    my $ins;
+    foreach my $flow (@flow_ins) {
+        if ( $flow eq 'TAKE' ) {
+            $ins = shift @instructions;
+        }
+        elsif ( $flow eq 'CYCLE' ) {
+            push @instructions, $ins;
+        }
+        elsif ( $flow eq 'ACT' ) {
+            execute_ins( $g, $ins );
+            if ( scalar @instructions == 0 ) {
+                last;
+            }
+        }
     }
-    elsif ( $flow eq 'CYCLE' ) {
-        push @instructions, $ins;
-    }
-    elsif ( $flow eq 'ACT' ) {
-        execute_ins( $g, $ins );
+    if ( $part2 == 0 ) {
+        $part2 = max_row_col($g);
     }
 }
+print "$part2\n";
 print max_row_col($g) . "\n";
