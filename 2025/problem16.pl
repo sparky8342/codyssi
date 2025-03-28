@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use List::Util qw(max);
+use Storable   qw(dclone);
 
 use Data::Dumper;
 
@@ -95,25 +96,35 @@ $size = scalar @grid;
 #SHIFT ROW 27 BY 19
 
 # part 1
+my $g = dclone( \@grid );
 foreach my $line ( split /\n/, $parts[1] ) {
     my @ins = split /\s/, $line;
-    if ( $ins[0] eq 'SHIFT' ) {
-        if ( $ins[1] eq 'ROW' ) {
-            shift_row( \@grid, $ins[2] - 1, $ins[4] );
+    my $op  = $ins[0];
+
+    if ( $op eq 'SHIFT' ) {
+        my $rowcol = $ins[1];
+        my $value  = $ins[2] - 1;
+        my $amount = $ins[4];
+        if ( $rowcol eq 'ROW' ) {
+            shift_row( $g, $value, $amount );
         }
-        elsif ( $ins[1] eq 'COL' ) {
-            shift_col( \@grid, $ins[2] - 1, $ins[4] );
+        elsif ( $rowcol eq 'COL' ) {
+            shift_col( $g, $value, $amount );
         }
     }
-    elsif ( $ins[0] eq 'ADD' || $ins[0] eq 'SUB' || $ins[0] eq 'MULTIPLY' ) {
-        if ( $ins[2] eq 'ROW' ) {
-            math_op_row( \@grid, $ins[0], $ins[3] - 1, $ins[1] );
+    elsif ( $op eq 'ADD' || $op eq 'SUB' || $op eq 'MULTIPLY' ) {
+        my $which  = $ins[2];
+        my $amount = $ins[1];
+        if ( $which eq 'ROW' ) {
+            my $value = $ins[3] - 1;
+            math_op_row( $g, $op, $value, $amount );
         }
-        elsif ( $ins[2] eq 'COL' ) {
-            math_op_col( \@grid, $ins[0], $ins[3] - 1, $ins[1] );
+        elsif ( $which eq 'COL' ) {
+            my $value = $ins[3] - 1;
+            math_op_col( $g, $op, $value, $amount );
         }
-        elsif ( $ins[2] eq 'ALL' ) {
-            math_op_all( \@grid, $ins[0], $ins[1] );
+        elsif ( $which eq 'ALL' ) {
+            math_op_all( $g, $op, $amount );
         }
     }
 }
@@ -123,8 +134,8 @@ for ( my $i = 0 ; $i < $size ; $i++ ) {
     my $r = 0;
     my $c = 0;
     for ( my $j = 0 ; $j < $size ; $j++ ) {
-        $r += $grid[$i][$j];
-        $c += $grid[$j][$i];
+        $r += $g->[$i][$j];
+        $c += $g->[$j][$i];
     }
     $max = max( $max, $r );
     $max = max( $max, $c );
