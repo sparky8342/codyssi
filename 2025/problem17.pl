@@ -2,8 +2,6 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-
 sub bfs {
     my ( $graph, $use_distances ) = @_;
     my @queue   = ( { pos => 'STT', distance => 0 } );
@@ -28,9 +26,27 @@ sub bfs {
     return $distances[0] * $distances[1] * $distances[2];
 }
 
-open my $fh, "<", "inputs/view_problem_17_input" or die "$!";
+sub dfs {
+    my ( $graph, $pos, $goal, $distance, $max, $visited ) = @_;
 
-#open my $fh, "<", "test.txt" or die "$!";
+    if ( exists( $visited->{$pos} ) ) {
+        if ( $pos eq $goal ) {
+            if ( $distance > $$max ) {
+                $$max = $distance;
+            }
+        }
+        return;
+    }
+
+    $visited->{$pos} = 1;
+    for my $neighbour ( @{ $graph->{$pos} } ) {
+        my ( $npos, $dist ) = @$neighbour;
+        dfs( $graph, $npos, $goal, $distance + $dist, $max, $visited );
+    }
+    delete( $visited->{$pos} );
+}
+
+open my $fh, "<", "inputs/view_problem_17_input" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -45,3 +61,10 @@ print bfs( \%graph ) . "\n";
 
 # part 2
 print bfs( \%graph, 1 ) . "\n";
+
+# part 3
+my $max = 0;
+for my $pos ( keys %graph ) {
+    dfs( \%graph, $pos, $pos, 0, \$max, {} );
+}
+print "$max\n";
