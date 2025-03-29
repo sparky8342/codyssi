@@ -11,14 +11,17 @@ sub bfs {
         my $entry = shift @queue;
         push @distances, $entry->{distance};
         for my $neighbour ( @{ $graph->{ $entry->{pos} } } ) {
-            my ( $npos, $dist ) = @$neighbour;
-            if ( !exists( $visited{$npos} ) ) {
+            if ( !exists( $visited{ $neighbour->{pos} } ) ) {
+                my $dist = $neighbour->{distance};
                 if ( !$use_distances ) {
                     $dist = 1;
                 }
                 push @queue,
-                  { pos => $npos, distance => $entry->{distance} + $dist };
-                $visited{$npos} = 1;
+                  {
+                    pos      => $neighbour->{pos},
+                    distance => $entry->{distance} + $dist
+                  };
+                $visited{ $neighbour->{pos} } = 1;
             }
         }
     }
@@ -40,8 +43,9 @@ sub dfs {
 
     $visited->{$pos} = 1;
     for my $neighbour ( @{ $graph->{$pos} } ) {
-        my ( $npos, $dist ) = @$neighbour;
-        dfs( $graph, $npos, $goal, $distance + $dist, $max, $visited );
+        dfs( $graph, $neighbour->{pos}, $goal,
+            $distance + $neighbour->{distance},
+            $max, $visited );
     }
     delete( $visited->{$pos} );
 }
@@ -53,7 +57,7 @@ close $fh;
 my %graph;
 foreach my $line (@lines) {
     $line =~ /^(\w+)\s->\s(\w+)\s\|\s(\d+)$/;
-    push @{ $graph{$1} }, [ $2, $3 ];
+    push @{ $graph{$1} }, { pos => $2, distance => $3 };
 }
 
 # part 1
