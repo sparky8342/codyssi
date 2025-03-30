@@ -25,16 +25,18 @@ print "$total\n";
 # part 2
 @items = sort { $a->{cost} <=> $b->{cost} } @items;
 
-my @dp = ( {} ) x 301;
+my $max_cost = 300;
+
+my @dp = ( { quality => 0, materials => 0 } ) x ( $max_cost + 1 );
 for ( my $i = 0 ; $i < scalar @items ; $i++ ) {
     $dp[ $items[$i]->{cost} ] = {
         quality   => $items[$i]->{quality},
         items     => { $i => 1 },
-        materials => $items[$i]->{materials}
+        materials => $items[$i]->{materials},
     };
 }
 
-for ( my $i = 0 ; $i <= 300 ; $i++ ) {
+for ( my $i = 0 ; $i <= $max_cost ; $i++ ) {
     if ( !exists( $dp[$i]->{quality} ) ) {
         next;
     }
@@ -43,32 +45,31 @@ for ( my $i = 0 ; $i <= 300 ; $i++ ) {
             next;
         }
         my $new_cost = $i + $items[$j]->{cost};
-        if ( $new_cost <= 300 ) {
-            if (
-                !exists( $dp[$new_cost]->{quality} )
-                || ( $dp[$new_cost]->{quality} <
-                    $dp[$i]->{quality} + $items[$j]->{quality} )
-                || (
-                    (
-                        $dp[$new_cost]->{quality} ==
-                        $dp[$i]->{quality} + $items[$j]->{quality}
-                    )
-                    && (
-                        scalar keys %{ $dp[$new_cost]->{items} } >
-                        ( scalar( keys %{ $dp[$i]->{items} } ) ) + 1 )
-                )
-              )
-            {
+        if ( $new_cost > $max_cost ) {
+            next;
+        }
 
-                my %new_items = %{ $dp[$i]->{items} };
-                $new_items{$j} = 1;
-                $dp[$new_cost] = {
-                    quality   => $dp[$i]->{quality} + $items[$j]->{quality},
-                    items     => \%new_items,
-                    materials => $dp[$i]->{materials} + $items[$j]->{materials}
-                };
+        my $existing_quality    = $dp[$new_cost]->{quality};
+        my $new_quality         = $dp[$i]->{quality} + $items[$j]->{quality};
+        my $existing_item_count = scalar keys %{ $dp[$new_cost]->{items} };
+        my $new_item_count      = ( scalar keys %{ $dp[$i]->{items} } ) + 1;
+
+        if ( $existing_quality > $new_quality ) {
+            next;
+        }
+        elsif ( $existing_quality == $new_quality ) {
+            if ( $existing_item_count < $new_item_count ) {
+                next;
             }
         }
+
+        my %new_items = %{ $dp[$i]->{items} };
+        $new_items{$j} = 1;
+        $dp[$new_cost] = {
+            quality   => $dp[$i]->{quality} + $items[$j]->{quality},
+            items     => \%new_items,
+            materials => $dp[$i]->{materials} + $items[$j]->{materials}
+        };
     }
 }
 
