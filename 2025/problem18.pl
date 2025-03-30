@@ -25,7 +25,7 @@ print "$total\n";
 # part 2
 @items = sort { $a->{cost} <=> $b->{cost} } @items;
 
-my @dp = ( {} ) x 31;
+my @dp = ( {} ) x 301;
 for ( my $i = 0 ; $i < scalar @items ; $i++ ) {
     $dp[ $items[$i]->{cost} ] = {
         quality   => $items[$i]->{quality},
@@ -34,7 +34,7 @@ for ( my $i = 0 ; $i < scalar @items ; $i++ ) {
     };
 }
 
-for ( my $i = 0 ; $i <= 30 ; $i++ ) {
+for ( my $i = 0 ; $i <= 300 ; $i++ ) {
     if ( !exists( $dp[$i]->{quality} ) ) {
         next;
     }
@@ -43,11 +43,23 @@ for ( my $i = 0 ; $i <= 30 ; $i++ ) {
             next;
         }
         my $new_cost = $i + $items[$j]->{cost};
-        if ( $new_cost <= 30 ) {
-            if ( !exists( $dp[$new_cost]->{quality} )
-                || $dp[$new_cost]->{quality} <
-                $dp[$i]->{quality} + $items[$j]->{quality} )
+        if ( $new_cost <= 300 ) {
+            if (
+                !exists( $dp[$new_cost]->{quality} )
+                || ( $dp[$new_cost]->{quality} <
+                    $dp[$i]->{quality} + $items[$j]->{quality} )
+                || (
+                    (
+                        $dp[$new_cost]->{quality} ==
+                        $dp[$i]->{quality} + $items[$j]->{quality}
+                    )
+                    && (
+                        scalar keys %{ $dp[$new_cost]->{items} } >
+                        ( scalar( keys %{ $dp[$i]->{items} } ) ) + 1 )
+                )
+              )
             {
+
                 my %new_items = %{ $dp[$i]->{items} };
                 $new_items{$j} = 1;
                 $dp[$new_cost] = {
@@ -61,4 +73,4 @@ for ( my $i = 0 ; $i <= 30 ; $i++ ) {
 }
 
 print $dp[30]->{quality} * $dp[30]->{materials} . "\n";
-
+print $dp[300]->{quality} * $dp[300]->{materials} . "\n";
