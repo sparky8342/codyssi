@@ -5,10 +5,13 @@ use warnings;
 use Data::Dumper;
 
 sub add_node {
-    my ( $node, $new_node ) = @_;
+    my ( $node, $new_node, $seq ) = @_;
+    if ( ref($seq) ) {
+        push @$seq, $node->{code};
+    }
     if ( $new_node->{id} <= $node->{id} ) {
         if ( defined( $node->{left} ) ) {
-            add_node( $node->{left}, $new_node );
+            add_node( $node->{left}, $new_node, $seq );
         }
         else {
             $node->{left} = $new_node;
@@ -16,7 +19,7 @@ sub add_node {
     }
     else {
         if ( defined( $node->{right} ) ) {
-            add_node( $node->{right}, $new_node );
+            add_node( $node->{right}, $new_node, $seq );
         }
         else {
             $node->{right} = $new_node;
@@ -73,3 +76,9 @@ for ( my $i = 1 ; $i < scalar @lines ; $i++ ) {
 
 # part 1
 print bfs($head) . "\n";
+
+# part 2
+my @seq;
+my $new_node = { code => '', id => 500000, left => undef, right => undef };
+add_node( $head, $new_node, \@seq );
+print join( "-", @seq ) . "\n";
