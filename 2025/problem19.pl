@@ -2,8 +2,6 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-
 sub add_node {
     my ( $node, $new_node, $seq ) = @_;
     if ( ref($seq) ) {
@@ -24,6 +22,22 @@ sub add_node {
         else {
             $node->{right} = $new_node;
         }
+    }
+}
+
+sub find_path {
+    my ( $node, $find_node, $seq ) = @_;
+    push @$seq, $node->{code};
+    if ( $node->{code} eq $find_node->{code} ) {
+        return;
+    }
+    elsif ( $find_node->{id} <= $node->{id} ) {
+        if ( defined( $node->{left} ) ) {
+            find_path( $node->{left}, $find_node, $seq );
+        }
+    }
+    elsif ( defined( $node->{right} ) ) {
+        find_path( $node->{right}, $find_node, $seq );
     }
 }
 
@@ -57,8 +71,6 @@ sub bfs {
 }
 
 open my $fh, "<", "inputs/view_problem_19_input" or die "$!";
-
-#open my $fh, "<", "test.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -82,3 +94,28 @@ my @seq;
 my $new_node = { code => '', id => 500000, left => undef, right => undef };
 add_node( $head, $new_node, \@seq );
 print join( "-", @seq ) . "\n";
+
+# part 3
+my $line_no = ( scalar @lines ) - 2;
+$lines[$line_no] =~ /^(\w+) \| (\d+)$/;
+my $node1 = { code => $1, id => $2, left => undef, right => undef };
+my @path1;
+find_path( $head, $node1, \@path1 );
+@path1 = reverse @path1;
+
+$line_no++;
+$lines[$line_no] =~ /^(\w+) \| (\d+)$/;
+my $node2 = { code => $1, id => $2, left => undef, right => undef };
+my @path2;
+find_path( $head, $node2, \@path2 );
+@path2 = reverse @path2;
+
+outer:
+foreach my $code1 (@path1) {
+    foreach my $code2 (@path2) {
+        if ( $code1 eq $code2 ) {
+            print "$code1\n";
+            last outer;
+        }
+    }
+}
