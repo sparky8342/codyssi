@@ -3,13 +3,10 @@ use strict;
 use warnings;
 
 sub add_node {
-    my ( $node, $new_node, $seq ) = @_;
-    if ( ref($seq) ) {
-        push @$seq, $node->{code};
-    }
+    my ( $node, $new_node ) = @_;
     if ( $new_node->{id} <= $node->{id} ) {
         if ( defined( $node->{left} ) ) {
-            add_node( $node->{left}, $new_node, $seq );
+            add_node( $node->{left}, $new_node );
         }
         else {
             $node->{left} = $new_node;
@@ -17,7 +14,7 @@ sub add_node {
     }
     else {
         if ( defined( $node->{right} ) ) {
-            add_node( $node->{right}, $new_node, $seq );
+            add_node( $node->{right}, $new_node );
         }
         else {
             $node->{right} = $new_node;
@@ -27,11 +24,14 @@ sub add_node {
 
 sub find_path {
     my ( $node, $find_node, $seq ) = @_;
-    push @$seq, $node->{code};
-    if ( $node->{code} eq $find_node->{code} ) {
-        return;
+    if ( !defined($seq) ) {
+        $seq = [];
     }
-    elsif ( $find_node->{id} <= $node->{id} ) {
+    if ( $node->{code} eq $find_node->{code} ) {
+        return $seq;
+    }
+    push @$seq, $node->{code};
+    if ( $find_node->{id} <= $node->{id} ) {
         if ( defined( $node->{left} ) ) {
             find_path( $node->{left}, $find_node, $seq );
         }
@@ -90,29 +90,27 @@ for ( my $i = 1 ; $i < scalar @lines ; $i++ ) {
 print bfs($head) . "\n";
 
 # part 2
-my @seq;
-my $new_node = { code => '', id => 500000, left => undef, right => undef };
-add_node( $head, $new_node, \@seq );
-print join( "-", @seq ) . "\n";
+my $new_node = { code => 'new', id => 500000, left => undef, right => undef };
+add_node( $head, $new_node );
+my $path = find_path( $head, $new_node );
+print join( "-", @$path ) . "\n";
 
 # part 3
 my $line_no = ( scalar @lines ) - 2;
 $lines[$line_no] =~ /^(\w+) \| (\d+)$/;
 my $node1 = { code => $1, id => $2, left => undef, right => undef };
-my @path1;
-find_path( $head, $node1, \@path1 );
-@path1 = reverse @path1;
+my $path1 = find_path( $head, $node1 );
+@$path1 = reverse @$path1;
 
 $line_no++;
 $lines[$line_no] =~ /^(\w+) \| (\d+)$/;
 my $node2 = { code => $1, id => $2, left => undef, right => undef };
-my @path2;
-find_path( $head, $node2, \@path2 );
-@path2 = reverse @path2;
+my $path2 = find_path( $head, $node2 );
+@$path2 = reverse @$path2;
 
 outer:
-foreach my $code1 (@path1) {
-    foreach my $code2 (@path2) {
+foreach my $code1 (@$path1) {
+    foreach my $code2 (@$path2) {
         if ( $code1 eq $code2 ) {
             print "$code1\n";
             last outer;
