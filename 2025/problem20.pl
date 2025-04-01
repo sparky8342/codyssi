@@ -5,61 +5,57 @@ use List::Util qw(max);
 use Math::BigInt;
 use Storable qw(dclone);
 
-# TODO make faces start at 0
-
-use constant MOD => 100;
-
 my $size = 80;
 
 my %graph;
 
 # n = nothing, l = rotate left, r = rotate right, f = flip 180
+$graph{0} = {
+    'A' => [ 3, "n" ],
+    'B' => [ 5, "n" ],
+    'C' => [ 1, "n" ],
+    'D' => [ 4, "n" ],
+};
 $graph{1} = {
-    'A' => [ 4, "n" ],
-    'B' => [ 6, "n" ],
+    'A' => [ 0, "n" ],
+    'B' => [ 5, "r" ],
     'C' => [ 2, "n" ],
-    'D' => [ 5, "n" ],
+    'D' => [ 4, "l" ],
 };
 $graph{2} = {
     'A' => [ 1, "n" ],
-    'B' => [ 6, "r" ],
+    'B' => [ 5, "f" ],
     'C' => [ 3, "n" ],
-    'D' => [ 5, "l" ],
+    'D' => [ 4, "f" ],
 };
 $graph{3} = {
     'A' => [ 2, "n" ],
-    'B' => [ 6, "f" ],
-    'C' => [ 4, "n" ],
-    'D' => [ 5, "f" ],
+    'B' => [ 5, "l" ],
+    'C' => [ 0, "n" ],
+    'D' => [ 4, "r" ],
 };
 $graph{4} = {
-    'A' => [ 3, "n" ],
-    'B' => [ 6, "l" ],
-    'C' => [ 1, "n" ],
-    'D' => [ 5, "r" ],
+    'A' => [ 3, "l" ],
+    'B' => [ 0, "n" ],
+    'C' => [ 1, "r" ],
+    'D' => [ 2, "f" ],
 };
 $graph{5} = {
-    'A' => [ 4, "l" ],
-    'B' => [ 1, "n" ],
-    'C' => [ 2, "r" ],
-    'D' => [ 3, "f" ],
-};
-$graph{6} = {
-    'A' => [ 4, "r" ],
-    'B' => [ 3, "f" ],
-    'C' => [ 2, "l" ],
-    'D' => [ 1, "n" ],
+    'A' => [ 3, "r" ],
+    'B' => [ 2, "f" ],
+    'C' => [ 1, "l" ],
+    'D' => [ 0, "n" ],
 };
 
 sub process_commands {
     my ( $faces, $lines, $turns, $wrap_around ) = @_;
 
     my @absorptions;
-    for ( 1 .. 7 ) {
+    for ( 1 .. 6 ) {
         push @absorptions, 0;
     }
 
-    my $current_face = 1;
+    my $current_face = 0;
     my $current_dirs = { 'U' => 'A', 'L' => 'D', 'R' => 'B', 'D' => 'C' };
 
     for ( my $i = 0 ; $i < scalar @$lines ; $i++ ) {
@@ -121,7 +117,7 @@ sub process_commands {
     @absorptions = sort { $b <=> $a } @absorptions;
 
     my $product = Math::BigInt->new(1);
-    for ( my $i = 1 ; $i <= 6 ; $i++ ) {
+    for ( my $i = 0 ; $i < 6 ; $i++ ) {
         my $val = Math::BigInt->new( max_row_col( $faces->[$i] ) );
         $product->bmul($val);
     }
@@ -246,7 +242,7 @@ my @turns = split //, pop @lines;
 pop @lines;
 
 my @faces;
-for ( 1 .. 7 ) {
+for ( 1 .. 6 ) {
     my @face;
     for ( 1 .. $size ) {
         my @row;
