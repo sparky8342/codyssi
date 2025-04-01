@@ -3,21 +3,13 @@ use strict;
 use warnings;
 use List::Util qw(max);
 use Math::BigInt;
-
-use Data::Dumper;
-
-#XX1XX
-#X526X
-#XX3XX
-#XX4XX
+use Storable qw(dclone);
 
 # TODO make faces start at 0
 
 use constant MOD => 100;
 
 my $size = 80;
-
-#my $size = 3;
 
 my %graph;
 
@@ -60,7 +52,7 @@ $graph{6} = {
 };
 
 sub process_commands {
-    my ( $faces, $lines, $turns ) = @_;
+    my ( $faces, $lines, $turns, $wrap_around ) = @_;
 
     my @absorptions;
     for ( 1 .. 7 ) {
@@ -89,30 +81,38 @@ sub process_commands {
             my ( $row, $n ) = ( $1, $2 );
             $absorptions[$current_face] += $size * $n;
             update_row( $faces, $current_face, $current_dirs, $row, $n );
+            if ($wrap_around) {
+                my $dir = 'R';
+
+                for ( 1 .. 3 ) {
+                    ( $current_face, $current_dirs ) =
+                      rotate( $current_face, $current_dirs, $dir );
+                    update_row( $faces, $current_face, $current_dirs, $row,
+                        $n );
+                }
+                ( $current_face, $current_dirs ) =
+                  rotate( $current_face, $current_dirs, $dir );
+            }
         }
         elsif ( $line =~ /^COL (\d+) - VALUE (\d+)$/ ) {
             my ( $col, $n ) = ( $1, $2 );
             $absorptions[$current_face] += $size * $n;
             update_col( $faces, $current_face, $current_dirs, $col, $n );
+            if ($wrap_around) {
+                my $dir = 'U';
+
+                for ( 1 .. 3 ) {
+                    ( $current_face, $current_dirs ) =
+                      rotate( $current_face, $current_dirs, $dir );
+                    update_col( $faces, $current_face, $current_dirs, $col,
+                        $n );
+                }
+                ( $current_face, $current_dirs ) =
+                  rotate( $current_face, $current_dirs, $dir );
+            }
         }
 
         if ( $i < scalar @$turns ) {
-
-            # probably don't need to reverse dirs here
-            #my $rot;
-            #if ( $turns[$i] eq 'U' ) {
-            #    $rot = 'D';
-            #}
-            #elsif ( $turns[$i] eq 'D' ) {
-            #    $rot = 'U';
-            #}
-            #elsif ( $turns[$i] eq 'L' ) {
-            #    $rot = 'R';
-            #}
-            #elsif ( $turns[$i] eq 'R' ) {
-            #    $rot = 'L';
-            #}
-
             ( $current_face, $current_dirs ) =
               rotate( $current_face, $current_dirs, $turns->[$i] );
         }
@@ -239,8 +239,6 @@ sub max_row_col {
 }
 
 open my $fh, "<", "inputs/view_problem_20_input" or die "$!";
-
-#open my $fh, "<", "test2.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -261,7 +259,11 @@ for ( 1 .. 7 ) {
 }
 
 my ( $absorption_product, $product ) =
-  process_commands( \@faces, \@lines, \@turns );
+  process_commands( dclone( \@faces ), \@lines, \@turns );
 print "$absorption_product\n";
+print "$product\n";
+
+( $absorption_product, $product ) =
+  process_commands( dclone( \@faces ), \@lines, \@turns, 1 );
 print "$product\n";
 
