@@ -59,6 +59,76 @@ $graph{6} = {
     'D' => [ 1, "n" ],
 };
 
+sub process_commands {
+    my ( $faces, $lines, $turns ) = @_;
+
+    my @absorptions;
+    for ( 1 .. 7 ) {
+        push @absorptions, 0;
+    }
+
+    my $current_face = 1;
+    my $current_dirs = { 'U' => 'A', 'L' => 'D', 'R' => 'B', 'D' => 'C' };
+
+    for ( my $i = 0 ; $i < scalar @$lines ; $i++ ) {
+        my $line = $lines->[$i];
+        if ( $line =~ /^FACE - VALUE (\d+)$/ ) {
+            my $n = $1;
+            $absorptions[$current_face] += $size * $size * $n;
+            for ( my $y = 0 ; $y < $size ; $y++ ) {
+                for ( my $x = 0 ; $x < $size ; $x++ ) {
+                    $faces->[$current_face][$y][$x] += $n;
+                    while ( $faces->[$current_face][$y][$x] > 100 ) {
+                        $faces->[$current_face][$y][$x] -= 100;
+                    }
+
+                }
+            }
+        }
+        elsif ( $line =~ /^ROW (\d+) - VALUE (\d+)$/ ) {
+            my ( $row, $n ) = ( $1, $2 );
+            $absorptions[$current_face] += $size * $n;
+            update_row( $faces, $current_face, $current_dirs, $row, $n );
+        }
+        elsif ( $line =~ /^COL (\d+) - VALUE (\d+)$/ ) {
+            my ( $col, $n ) = ( $1, $2 );
+            $absorptions[$current_face] += $size * $n;
+            update_col( $faces, $current_face, $current_dirs, $col, $n );
+        }
+
+        if ( $i < scalar @$turns ) {
+
+            # probably don't need to reverse dirs here
+            #my $rot;
+            #if ( $turns[$i] eq 'U' ) {
+            #    $rot = 'D';
+            #}
+            #elsif ( $turns[$i] eq 'D' ) {
+            #    $rot = 'U';
+            #}
+            #elsif ( $turns[$i] eq 'L' ) {
+            #    $rot = 'R';
+            #}
+            #elsif ( $turns[$i] eq 'R' ) {
+            #    $rot = 'L';
+            #}
+
+            ( $current_face, $current_dirs ) =
+              rotate( $current_face, $current_dirs, $turns->[$i] );
+        }
+    }
+
+    @absorptions = sort { $b <=> $a } @absorptions;
+
+    my $product = Math::BigInt->new(1);
+    for ( my $i = 1 ; $i <= 6 ; $i++ ) {
+        my $val = Math::BigInt->new( max_row_col( $faces->[$i] ) );
+        $product->bmul($val);
+    }
+
+    return ( $absorptions[0] * $absorptions[1], $product );
+}
+
 sub rotate {
     my ( $current_face, $current_dirs, $rotation ) = @_;
 
@@ -174,7 +244,8 @@ open my $fh, "<", "inputs/view_problem_20_input" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
-my @turns = split //, $lines[ scalar @lines - 1 ];
+my @turns = split //, pop @lines;
+pop @lines;
 
 my @faces;
 for ( 1 .. 7 ) {
@@ -189,76 +260,8 @@ for ( 1 .. 7 ) {
     push @faces, \@face;
 }
 
-my @absorptions;
-for ( 1 .. 7 ) {
-    push @absorptions, 0;
-}
+my ( $absorption_product, $product ) =
+  process_commands( \@faces, \@lines, \@turns );
+print "$absorption_product\n";
+print "$product\n";
 
-my $current_face = 1;
-my $current_dirs = { 'U' => 'A', 'L' => 'D', 'R' => 'B', 'D' => 'C' };
-
-for ( my $i = 0 ; $i < scalar @lines ; $i++ ) {
-    my $line = $lines[$i];
-    if ( $line eq '' ) {
-        last;
-    }
-    if ( $line =~ /^FACE - VALUE (\d+)$/ ) {
-        my $n = $1;
-        $absorptions[$current_face] += $size * $size * $n;
-        for ( my $y = 0 ; $y < $size ; $y++ ) {
-            for ( my $x = 0 ; $x < $size ; $x++ ) {
-                $faces[$current_face][$y][$x] += $n;
-                while ( $faces[$current_face][$y][$x] > 100 ) {
-                    $faces[$current_face][$y][$x] -= 100;
-                }
-
-            }
-        }
-    }
-    elsif ( $line =~ /^ROW (\d+) - VALUE (\d+)$/ ) {
-        my ( $row, $n ) = ( $1, $2 );
-        $absorptions[$current_face] += $size * $n;
-        update_row( \@faces, $current_face, $current_dirs, $row, $n );
-    }
-    elsif ( $line =~ /^COL (\d+) - VALUE (\d+)$/ ) {
-        my ( $col, $n ) = ( $1, $2 );
-        $absorptions[$current_face] += $size * $2;
-        update_col( \@faces, $current_face, $current_dirs, $col, $n );
-    }
-
-    if ( $i < scalar @turns ) {
-
-        # probably don't need to reverse dirs here
-        my $rot;
-        if ( $turns[$i] eq 'U' ) {
-            $rot = 'D';
-        }
-        elsif ( $turns[$i] eq 'D' ) {
-            $rot = 'U';
-        }
-        elsif ( $turns[$i] eq 'L' ) {
-            $rot = 'R';
-        }
-        elsif ( $turns[$i] eq 'R' ) {
-            $rot = 'L';
-        }
-
-        ( $current_face, $current_dirs ) =
-          rotate( $current_face, $current_dirs, $rot );
-    }
-
-}
-
-# part 1
-@absorptions = sort { $b <=> $a } @absorptions;
-printf( "%d\n", $absorptions[0] * $absorptions[1] );
-
-# part 2
-my $product = Math::BigInt->new(1);
-for ( my $i = 1 ; $i <= 6 ; $i++ ) {
-    my $val = Math::BigInt->new( max_row_col( $faces[$i] ) );
-    $product->bmul($val);
-    print "$val\n";
-}
-
-print $product . "\n";
