@@ -41,7 +41,7 @@ sub create_graph {
 
         # link up path
         my $path_node = $node_cache{ "S$from_id" . "_" . $start };
-        push @{ $path_node->{next} }, $start_node;
+        unshift @{ $path_node->{next} }, $start_node;
 
         $path_node = $node_cache{ "S$to_id" . "_" . $end };
         push @{ $node->{next} }, $path_node;
@@ -114,9 +114,53 @@ sub bfs {
 
 }
 
+sub dfs_steps {
+    my ( $node, $steps ) = @_;
+
+    if ( $steps == 0 ) {
+        return [$node];
+    }
+
+    my @nodes;
+    for my $next_node ( @{ $node->{next} } ) {
+        my $n = dfs_steps( $next_node, $steps - 1 );
+        @nodes = ( @nodes, @$n );
+    }
+
+    return \@nodes;
+}
+
+sub dfs {
+    my ( $node, $end_node, $moves, $cache ) = @_;
+
+    if ( exists( $cache->{ $node->{id} } ) ) {
+        return $cache->{ $node->{id} };
+    }
+
+    if ( $node->{id} eq $end_node->{id} ) {
+        return 1;
+    }
+
+    my @next_nodes;
+    for my $move (@$moves) {
+        @next_nodes = ( @next_nodes, @{ dfs_steps( $node, $move ) } );
+    }
+
+    my %n = map { $_->{id} => $_ } @next_nodes;
+    @next_nodes = values %n;
+
+    my $paths = Math::BigInt->new(0);
+    for my $next_node (@next_nodes) {
+        $paths += dfs( $next_node, $end_node, $moves, $cache );
+    }
+
+    $cache->{ $node->{id} } = $paths;
+    return $paths;
+}
+
 open my $fh, "<", "inputs/view_problem_21_input" or die "$!";
 
-#open my $fh, "<", "test3.txt" or die "$!";
+#open my $fh, "<", "test.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -142,7 +186,13 @@ for ( my $i = 0 ; $i <= $end ; $i++ ) {
 printf $dp[$end] . "\n";
 
 # part 2
-
 my ( $head, $end_node ) = create_graph( \@lines );
-bfs( $head, \@moves );
-print $end_node->{paths} . "\n";
+my %cache;
+my $paths = dfs( $head, $end_node, \@moves, \%cache );
+print "$paths\n";
+
+#my $nodes = dfs_steps($head, 3);
+#for my $n (@$nodes) {
+#	print "$n->{id}\n";
+#}
+
