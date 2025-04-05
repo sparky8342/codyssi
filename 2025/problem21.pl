@@ -3,8 +3,6 @@ use strict;
 use warnings;
 use Math::BigInt;
 
-use Data::Dumper;
-
 sub create_graph {
     my ($lines) = @_;
 
@@ -48,70 +46,6 @@ sub create_graph {
     }
 
     return ( $head, $end_node );
-}
-
-sub add_moves {
-    my ( $node, $moves, $moves_found ) = @_;
-
-    my %destination_nodes;
-    for my $move (@$moves) {
-        my @queue = ( { node => $node, steps => 0 } );
-
-        while ( scalar @queue ) {
-            my $pos = shift @queue;
-            if ( $pos->{steps} == $move ) {
-                $destination_nodes{ $pos->{node}->{id} } = $pos->{node};
-                next;
-            }
-            for my $next_node ( @{ $pos->{node}->{next} } ) {
-                push @queue, { node => $next_node, steps => $pos->{steps} + 1 };
-            }
-        }
-    }
-
-    #print $node->{id}, ' => ', join( " ", keys %destination_nodes ), ' ',
-    #$node->{paths} . "\n";
-    for my $dnode ( values %destination_nodes ) {
-        $dnode->{paths} += $node->{paths};
-    }
-
-}
-
-sub bfs {
-    my ( $head, $moves ) = @_;
-
-    $head->{paths} = Math::BigInt->new(1);
-
-    # search through all nodes, add moves
-    my @queue   = ($head);
-    my %visited = ( $head->{id} => 1 );
-
-    while ( scalar @queue ) {
-        my $node = shift @queue;
-
-        if ( exists( $node->{paths} ) ) {
-            add_moves( $node, $moves );
-        }
-
-        for my $next_node ( @{ $node->{next} } ) {
-            if ( !exists( $visited{ $next_node->{id} } ) ) {
-                push @queue, $next_node;
-                $visited{ $next_node->{id} } = 1;
-            }
-        }
-
-        @queue = sort {
-            $b->{id} =~ /^S(\d+)_(\d+)$/;
-            my ( $b_id, $b_step ) = ( $1, $2 );
-
-            $a->{id} =~ /^S(\d+)_(\d+)$/;
-            my ( $a_id, $a_step ) = ( $1, $2 );
-
-            return $a_step <=> $b_step || $b_id <=> $a_id;
-        } @queue;
-
-    }
-
 }
 
 sub dfs_steps {
@@ -172,16 +106,16 @@ sub find_path_no {
     my $node = $head;
 
     my @path = ( $head->{id} );
-    while ( $node->{id} ne $end_node->{id} ) {
-	    #print "$node->{id}\n";
-        my $next_nodes = get_next_nodes( $node, $moves );
 
-        # TODO one cache for all dfs runs?
+    my %cache;
+
+    while ( $node->{id} ne $end_node->{id} ) {
+        my $next_nodes = get_next_nodes( $node, $moves );
 
         my @counts;
 
         foreach my $next_node (@$next_nodes) {
-            my $paths = dfs( $next_node, $end_node, $moves, {} );
+            my $paths = dfs( $next_node, $end_node, $moves, \%cache );
             push @counts, { node => $next_node, paths => $paths };
         }
 
@@ -195,32 +129,29 @@ sub find_path_no {
             return $a_id <=> $b_id || $a_step <=> $b_step;
         } @counts;
 
-	my $pos = $min;
-	foreach my $c (@counts) {
-		$c->{min} = $pos;
-		$pos += $c->{paths} - 1;
-		$c->{max} = $pos;
-		$pos++;
-	}
+        my $pos = $min;
+        foreach my $c (@counts) {
+            $c->{min} = $pos;
+            $pos += $c->{paths} - 1;
+            $c->{max} = $pos;
+            $pos++;
+        }
 
         foreach my $c (@counts) {
-		#print $c->{node}->{id} . ' ' . $c->{paths} . ' ' . $c->{min} . ' ' . $c->{max} . "\n";
-	    if ($c->{min} <= $target && $target <= $c->{max}) {
-		    push @path, $c->{node}->{id};
-		    $node = $c->{node};
-		    $min = $c->{min};
-		    $max = $c->{max};
-		    last;
-	    }
+            if ( $c->{min} <= $target && $target <= $c->{max} ) {
+                push @path, $c->{node}->{id};
+                $node = $c->{node};
+                $min  = $c->{min};
+                $max  = $c->{max};
+                last;
+            }
         }
     }
 
-    return join("-", @path);
+    return join( "-", @path );
 }
 
 open my $fh, "<", "inputs/view_problem_21_input" or die "$!";
-
-#open my $fh, "<", "test.txt" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -252,5 +183,7 @@ print "$paths\n";
 
 # part 3
 my $target = Math::BigInt->new(100000000000000000000000000000);
-my $path = find_path_no( $head, $end_node, \@moves, $target, Math::BigInt->new(1), $paths );
+my $path =
+  find_path_no( $head, $end_node, \@moves, $target, Math::BigInt->new(1),
+    $paths );
 print "$path\n";
