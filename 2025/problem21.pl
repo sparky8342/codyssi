@@ -130,6 +130,20 @@ sub dfs_steps {
     return \@nodes;
 }
 
+sub get_next_nodes {
+    my ( $node, $moves ) = @_;
+
+    my @next_nodes;
+    for my $move (@$moves) {
+        @next_nodes = ( @next_nodes, @{ dfs_steps( $node, $move ) } );
+    }
+
+    my %n = map { $_->{id} => $_ } @next_nodes;
+    @next_nodes = values %n;
+
+    return \@next_nodes;
+}
+
 sub dfs {
     my ( $node, $end_node, $moves, $cache ) = @_;
 
@@ -141,21 +155,67 @@ sub dfs {
         return 1;
     }
 
-    my @next_nodes;
-    for my $move (@$moves) {
-        @next_nodes = ( @next_nodes, @{ dfs_steps( $node, $move ) } );
-    }
-
-    my %n = map { $_->{id} => $_ } @next_nodes;
-    @next_nodes = values %n;
+    my $next_nodes = get_next_nodes( $node, $moves );
 
     my $paths = Math::BigInt->new(0);
-    for my $next_node (@next_nodes) {
+    for my $next_node (@$next_nodes) {
         $paths += dfs( $next_node, $end_node, $moves, $cache );
     }
 
     $cache->{ $node->{id} } = $paths;
     return $paths;
+}
+
+sub find_path_no {
+    my ( $head, $end_node, $moves, $target, $min, $max ) = @_;
+
+    my $node = $head;
+
+    my @path = ( $head->{id} );
+    while ( $node->{id} ne $end_node->{id} ) {
+	    #print "$node->{id}\n";
+        my $next_nodes = get_next_nodes( $node, $moves );
+
+        # TODO one cache for all dfs runs?
+
+        my @counts;
+
+        foreach my $next_node (@$next_nodes) {
+            my $paths = dfs( $next_node, $end_node, $moves, {} );
+            push @counts, { node => $next_node, paths => $paths };
+        }
+
+        @counts = sort {
+            $b->{node}->{id} =~ /^S(\d+)_(\d+)$/;
+            my ( $b_id, $b_step ) = ( $1, $2 );
+
+            $a->{node}->{id} =~ /^S(\d+)_(\d+)$/;
+            my ( $a_id, $a_step ) = ( $1, $2 );
+
+            return $a_id <=> $b_id || $a_step <=> $b_step;
+        } @counts;
+
+	my $pos = $min;
+	foreach my $c (@counts) {
+		$c->{min} = $pos;
+		$pos += $c->{paths} - 1;
+		$c->{max} = $pos;
+		$pos++;
+	}
+
+        foreach my $c (@counts) {
+		#print $c->{node}->{id} . ' ' . $c->{paths} . ' ' . $c->{min} . ' ' . $c->{max} . "\n";
+	    if ($c->{min} <= $target && $target <= $c->{max}) {
+		    push @path, $c->{node}->{id};
+		    $node = $c->{node};
+		    $min = $c->{min};
+		    $max = $c->{max};
+		    last;
+	    }
+        }
+    }
+
+    return join("-", @path);
 }
 
 open my $fh, "<", "inputs/view_problem_21_input" or die "$!";
@@ -187,12 +247,10 @@ printf $dp[$end] . "\n";
 
 # part 2
 my ( $head, $end_node ) = create_graph( \@lines );
-my %cache;
-my $paths = dfs( $head, $end_node, \@moves, \%cache );
+my $paths = dfs( $head, $end_node, \@moves, {} );
 print "$paths\n";
 
-#my $nodes = dfs_steps($head, 3);
-#for my $n (@$nodes) {
-#	print "$n->{id}\n";
-#}
-
+# part 3
+my $target = Math::BigInt->new(100000000000000000000000000000);
+my $path = find_path_no( $head, $end_node, \@moves, $target, Math::BigInt->new(1), $paths );
+print "$path\n";
