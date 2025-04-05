@@ -3,6 +3,9 @@ use strict;
 use warnings;
 use Math::BigInt;
 
+my %cache;
+my %move_cache;
+
 sub add_edge {
     my ( $edges, $from, $to ) = @_;
     push @{ $edges->{$from} }, $to;
@@ -69,6 +72,10 @@ sub dfs_steps {
 sub get_next_nodes {
     my ( $edges, $node, $moves ) = @_;
 
+    if ( exists( $move_cache{$node} ) ) {
+        return $move_cache{$node};
+    }
+
     my @next_nodes;
     for my $move (@$moves) {
         @next_nodes = ( @next_nodes, @{ dfs_steps( $edges, $node, $move ) } );
@@ -77,14 +84,16 @@ sub get_next_nodes {
     my %n = map { $_ => 1 } @next_nodes;
     @next_nodes = keys %n;
 
+    $move_cache{$node} = \@next_nodes;
+
     return \@next_nodes;
 }
 
 sub dfs {
-    my ( $edges, $node, $end_node, $moves, $cache ) = @_;
+    my ( $edges, $node, $end_node, $moves ) = @_;
 
-    if ( exists( $cache->{$node} ) ) {
-        return $cache->{$node};
+    if ( exists( $cache{$node} ) ) {
+        return $cache{$node};
     }
 
     if ( $node eq $end_node ) {
@@ -95,10 +104,10 @@ sub dfs {
 
     my $paths = Math::BigInt->new(0);
     for my $next_node (@$next_nodes) {
-        $paths += dfs( $edges, $next_node, $end_node, $moves, $cache );
+        $paths += dfs( $edges, $next_node, $end_node, $moves );
     }
 
-    $cache->{$node} = $paths;
+    $cache{$node} = $paths;
     return $paths;
 }
 
@@ -109,15 +118,13 @@ sub find_path_no {
 
     my @path = ($node);
 
-    my %cache;
-
     while ( $node ne $end_node ) {
         my $next_nodes = get_next_nodes( $edges, $node, $moves );
 
         my @counts;
 
         foreach my $next_node (@$next_nodes) {
-            my $paths = dfs( $edges, $next_node, $end_node, $moves, \%cache );
+            my $paths = dfs( $edges, $next_node, $end_node, $moves );
             push @counts, { node => $next_node, paths => $paths };
         }
 
@@ -180,7 +187,7 @@ printf $dp[$end] . "\n";
 
 # part 2
 my ( $edges, $start_node, $end_node ) = create_graph( \@lines );
-my $paths = dfs( $edges, $start_node, $end_node, \@moves, {} );
+my $paths = dfs( $edges, $start_node, $end_node, \@moves );
 print "$paths\n";
 
 # part 3
