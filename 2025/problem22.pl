@@ -122,11 +122,6 @@ sub bfs {
                   { $n->{a} };
             }
 
-            if ( $n->{x} == 0 && $n->{y} == 0 && $n->{z} == 0 && $n->{a} == 0 )
-            {
-                $damage = 0;
-            }
-
             $n->{hp} -= $damage;
 
             push @queue, $n;
@@ -160,7 +155,7 @@ foreach my $line (@lines) {
 }
 
 # part 1
-my @debris;
+my $debris;
 for ( my $x = XMIN ; $x <= XMAX ; $x++ ) {
     for ( my $y = YMIN ; $y <= YMAX ; $y++ ) {
         for ( my $z = ZMIN ; $z <= ZMAX ; $z++ ) {
@@ -183,25 +178,31 @@ for ( my $x = XMIN ; $x <= XMAX ; $x++ ) {
                             vz => $rule->{vz},
                             va => $rule->{va},
                         };
-                        push @debris, $piece;
+                        push @$debris, $piece;
                     }
                 }
             }
         }
     }
 }
-print scalar @debris . "\n";
+print scalar @$debris . "\n";
 
 # part 2
 my %spacetime;
-my $d = \@debris;
 
 for my $time ( 0 .. 300 ) {
-    for my $piece (@$d) {
+    for my $piece (@$debris) {
+        if (   $piece->{x} == 0
+            && $piece->{y} == 0
+            && $piece->{z} == 0
+            && $piece->{a} == 0 )
+        {
+            next;
+        }
         $spacetime{$time}{ $piece->{x} }{ $piece->{y} }{ $piece->{z} }
           { $piece->{a} }++;
     }
-    $d = next_debris($d);
+    $debris = next_debris($debris);
 }
 
 my $time = bfs( \%spacetime, 0 );
