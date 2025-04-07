@@ -2,38 +2,19 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-
-use constant XMIN => 0;
-use constant XMAX => 9;
-use constant YMIN => 0;
-use constant YMAX => 14;
-use constant ZMIN => 0;
-use constant ZMAX => 59;
-use constant AMIN => -1;
-use constant AMAX => 1;
-
-use constant XRANGE => 10;
-use constant YRANGE => 15;
-use constant ZRANGE => 60;
-use constant ARANGE => 3;
-
-#use constant XMIN => 0;
-#use constant XMAX => 2;
-#use constant YMIN => 0;
-#use constant YMAX => 2;
-#use constant ZMIN => 0;
-#use constant ZMAX => 4;
-#use constant AMIN => -1;
-#use constant AMAX => 1;
-
-#use constant XRANGE => 3;
-#use constant YRANGE => 3;
-#use constant ZRANGE => 5;
-#use constant ARANGE => 3;
+use constant {
+    XMIN => 0,
+    XMAX => 9,
+    YMIN => 0,
+    YMAX => 14,
+    ZMIN => 0,
+    ZMAX => 59,
+    AMIN => -1,
+    AMAX => 1,
+};
 
 sub next_position {
-    my ( $pos, $adj, $min, $max, $range ) = @_;
+    my ( $pos, $adj, $min, $max ) = @_;
     $pos += $adj;
     if ( $pos < $min ) {
         $pos = $max;
@@ -49,10 +30,10 @@ sub next_debris {
     my @next;
     foreach my $piece (@$debris) {
         my $next_piece = {
-            x => next_position( $piece->{x}, $piece->{vx}, XMIN, XMAX, XRANGE ),
-            y => next_position( $piece->{y}, $piece->{vy}, YMIN, YMAX, YRANGE ),
-            z => next_position( $piece->{z}, $piece->{vz}, ZMIN, ZMAX, ZRANGE ),
-            a => next_position( $piece->{a}, $piece->{va}, AMIN, AMAX, ARANGE ),
+            x  => next_position( $piece->{x}, $piece->{vx}, XMIN, XMAX ),
+            y  => next_position( $piece->{y}, $piece->{vy}, YMIN, YMAX ),
+            z  => next_position( $piece->{z}, $piece->{vz}, ZMIN, ZMAX ),
+            a  => next_position( $piece->{a}, $piece->{va}, AMIN, AMAX ),
             vx => $piece->{vx},
             vy => $piece->{vy},
             vz => $piece->{vz},
@@ -63,10 +44,13 @@ sub next_debris {
     return \@next;
 }
 
-sub piece_key {
-    my ($piece) = @_;
-    return sprintf( "%d_%d_%d_%d_%d",
-        $piece->{time}, $piece->{x}, $piece->{y}, $piece->{z}, $piece->{a} );
+sub ship_key {
+    my ($ship) = @_;
+    return sprintf(
+        "%d_%d_%d_%d_%d_%d",
+        $ship->{time}, $ship->{x}, $ship->{y},
+        $ship->{z},    $ship->{a}, $ship->{hp}
+    );
 }
 
 sub ship_neighbours {
@@ -93,9 +77,65 @@ sub ship_neighbours {
     return \@n;
 }
 
-open my $fh, "<", "inputs/view_problem_22_input" or die "$!";
+sub bfs {
+    my ( $spacetime, $hp ) = @_;
 
-#open my $fh, "<", "test2.txt" or die "$!";
+    my $start = { time => 0, x => 0,  y => 0,  z => 0, a => 0, hp => $hp };
+    my $end   = { x    => 9, y => 14, z => 59, a => 0 };
+
+    my @queue   = ($start);
+    my %visited = ( ship_key($start) => 1 );
+
+    while ( scalar @queue ) {
+        my $ship = shift @queue;
+
+        if ( $ship->{hp} < 0 ) {
+            next;
+        }
+
+        if (   $ship->{x} == $end->{x}
+            && $ship->{y} == $end->{y}
+            && $ship->{z} == $end->{z}
+            && $ship->{a} == $end->{a} )
+        {
+            return $ship->{time};
+        }
+
+        my $neighbours = ship_neighbours($ship);
+
+        for my $n (@$neighbours) {
+            my $key = ship_key($n);
+            if ( exists( $visited{$key} ) ) {
+                next;
+            }
+
+            my $damage = 0;
+            if (
+                exists(
+                    $spacetime->{ $n->{time} }{ $n->{x} }{ $n->{y} }{ $n->{z} }
+                      { $n->{a} }
+                )
+              )
+            {
+                $damage =
+                  $spacetime->{ $n->{time} }{ $n->{x} }{ $n->{y} }{ $n->{z} }
+                  { $n->{a} };
+            }
+
+            if ( $n->{x} == 0 && $n->{y} == 0 && $n->{z} == 0 && $n->{a} == 0 )
+            {
+                $damage = 0;
+            }
+
+            $n->{hp} -= $damage;
+
+            push @queue, $n;
+            $visited{$key} = 1;
+        }
+    }
+}
+
+open my $fh, "<", "inputs/view_problem_22_input" or die "$!";
 chomp( my @lines = <$fh> );
 close $fh;
 
@@ -159,49 +199,14 @@ my $d = \@debris;
 for my $time ( 0 .. 300 ) {
     for my $piece (@$d) {
         $spacetime{$time}{ $piece->{x} }{ $piece->{y} }{ $piece->{z} }
-          { $piece->{a} } = 1;
+          { $piece->{a} }++;
     }
     $d = next_debris($d);
 }
 
-my $start = { time => 0, x => 0,  y => 0,  z => 0, a => 0 };
-my $end   = { x    => 9, y => 14, z => 59, a => 0 };
+my $time = bfs( \%spacetime, 0 );
+print "$time\n";
 
-#my $end = { x => 2, y => 2, z => 4, a => 0};
-
-my @queue   = ($start);
-my %visited = ( piece_key($start) => 1 );
-
-while ( scalar @queue ) {
-    my $ship = shift @queue;
-
-    if (   $ship->{x} == $end->{x}
-        && $ship->{y} == $end->{y}
-        && $ship->{z} == $end->{z}
-        && $ship->{a} == $end->{a} )
-    {
-        print "$ship->{time}\n";
-        last;
-    }
-
-    my $neighbours = ship_neighbours($ship);
-
-    for my $n (@$neighbours) {
-        if (
-            ( $n->{x} == 0 && $n->{y} == 0 && $n->{z} == 0 && $n->{a} == 0 )
-            || (
-                !exists(
-                    $spacetime{ $n->{time} }{ $n->{x} }{ $n->{y} }{ $n->{z} }
-                      { $n->{a} }
-                )
-            )
-          )
-        {
-            my $key = piece_key($n);
-            if ( !exists( $visited{$key} ) ) {
-                push @queue, $n;
-                $visited{$key} = 1;
-            }
-        }
-    }
-}
+# part 3
+$time = bfs( \%spacetime, 3 );
+print "$time\n";
